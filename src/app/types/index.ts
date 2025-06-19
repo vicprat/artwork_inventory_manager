@@ -85,19 +85,3 @@ export type Product  = {
 }
 
 
-export type EditableInputProps = {
-  value: string | number | undefined;
-  onChange: (value: string) => void;
-  type?: 'text' | 'number';
-  placeholder?: string;
-  className?: string;
-  step?: string;
-}
-
-
-export type EditableSelectProps = {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  className?: string;
-}
