@@ -80,6 +80,8 @@ export type Product  = {
   artworkLocation?: string;
   images?: ProductImage[];
   product_images?: ProductImage[];
+  serie?: string;
+  profundidad?: string;
 }
 
 
