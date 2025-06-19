@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import { Product } from "@/app/types";
+import { Product } from "@/types";
 import { useUploadProductImage } from "@/hooks/useProducts";
 import { UploadCloudIcon } from "lucide-react";
 import { useRef } from "react";

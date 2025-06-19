@@ -1,4 +1,4 @@
-import { Product } from "@/app/types";
+import { Product } from "@/types";
 
 export const generateDescription = (product: Product): string => {
     const parts: string[] = [];

@@ -10,7 +10,7 @@ import {
   type FetchProductsParams 
 } from '@/lib/api/products';
 import { Logger } from '@/utils/logger';
-import { Product } from '@/app/types';
+import { Product } from '@/types';
 
 export const useProducts = (params: FetchProductsParams) => {
   return useQuery({

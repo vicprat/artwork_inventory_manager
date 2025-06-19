@@ -1,6 +1,6 @@
 import { supabase } from '@/utils/supabase/client';
 import { generateDescription, generateTags } from '@/utils/data';
-import { Product } from '@/app/types';
+import { Product } from '@/types';
 
 export interface FetchProductsParams {
   pageIndex: number;

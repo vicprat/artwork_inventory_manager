@@ -4,7 +4,7 @@ import { EditIcon, SaveIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { artistOptions, locationOptions, techniqueOptions, typeOptions } from '@/lib/constants';
-import {  Product } from '@/app/types';
+import {  Product } from '@/types';
 import { ImageUploader } from '@/components/ImageUploader';
 import React from 'react';
 import { EditableInput } from '@/components/EditableInput';
