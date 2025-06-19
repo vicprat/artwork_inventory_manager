@@ -79,6 +79,7 @@ export type Product  = {
   artwork_status?: string;
   artworkLocation?: string;
   images?: ProductImage[];
+  product_images?: ProductImage[];
 }
 
 

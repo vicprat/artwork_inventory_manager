@@ -81,7 +81,7 @@ const fetchData = useCallback(async () => {
         
         let query = supabase
             .from('products')
-            .select(`*, images:product_images(*)`, { count: 'exact' });
+            .select(`*, product_images(*)`, { count: 'exact' });
         
         if (globalFilter && globalFilter.trim()) {
             query = query.or(`title.ilike.%${globalFilter}%,vendor.ilike.%${globalFilter}%,type.ilike.%${globalFilter}%,artwork_medium.ilike.%${globalFilter}%`);
@@ -93,7 +93,12 @@ const fetchData = useCallback(async () => {
 
         if (productsError) throw productsError;
 
-        setData(productsData || []);
+        const mappedData = productsData?.map(product => ({
+            ...product,
+            images: product.product_images || []
+        })) || [];
+
+        setData(mappedData);
         setTotalProducts(count || 0);
 
     } catch (err: any) {
@@ -108,31 +113,38 @@ const fetchData = useCallback(async () => {
         return () => clearTimeout(timer);
     }, [fetchData]);
 
-    const handleSave = useCallback(async (rowIndex: number) => {
-        const productToSave = data[rowIndex];
-        if (!productToSave) return;
-        setSaving(true);
-        try {
-            const updatedProduct = { ...productToSave };
-            updatedProduct.body_html = generateDescription(updatedProduct);
-            updatedProduct.tags = generateTags(updatedProduct);
-            const { /* images, */ ...productData } = updatedProduct;
+const handleSave = useCallback(async (rowIndex: number) => {
+    const productToSave = data[rowIndex];
+    if (!productToSave) return;
+    setSaving(true);
+    try {
+        const updatedProduct = { ...productToSave };
+        updatedProduct.body_html = generateDescription(updatedProduct);
+        updatedProduct.tags = generateTags(updatedProduct);
+        
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { images, product_images, ...productData } = updatedProduct;
+        
+        const { error } = await supabase
+            .from('products')
+            .update(productData)
+            .eq('id', productData.id);
             
-            const { error } = await supabase.from('products').update(productData).eq('id', productData.id);
-            if (error) throw error;
-            
-            setEditingRow(null); 
-            Logger.success(`Producto "${productData.title}" guardado.`);
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError('Unknown error');
-            }
-        } finally {
-            setSaving(false);
+        if (error) throw error;
+        
+        setEditingRow(null); 
+        Logger.success(`Producto "${productData.title}" guardado.`);
+
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            setError(err.message);
+        } else {
+            setError('Unknown error');
         }
-    }, [data]);
+    } finally {
+        setSaving(false);
+    }
+}, [data]);
     
     const updateLocalData = useCallback((rowIndex: number, columnId: string, value: string) => {
         setData(old =>
