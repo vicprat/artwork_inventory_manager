@@ -351,7 +351,7 @@ const handleSave = useCallback(async (rowIndex: number) => {
                 </div>
             )
         }
-    ], [editingRow, fetchData, handleSave, saving, statusOptions, updateLocalData]); 
+    ], [editingRow, fetchData,  saving, statusOptions, updateLocalData]); 
     
     const table = useReactTable({
         data,
