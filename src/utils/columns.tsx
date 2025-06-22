@@ -9,6 +9,7 @@ import { ImageUploader } from '@/components/ImageUploader';
 import React from 'react';
 import { EditableInput } from '@/components/EditableInput';
 import { EditableSelect } from '@/components/EditableSelect';
+import Link from 'next/link';
 
 declare module '@tanstack/react-table' {
   interface TableMeta<TData extends RowData> {
@@ -75,12 +76,14 @@ export const columns: ColumnDef<Product>[] = [
       ) : (
         <div className="w-52">
           <div className="group relative">
-            <p 
-              className="font-bold text-gray-900 truncate cursor-help" 
-              title={row.original.title} 
-            >
-              {row.original.title}
-            </p>
+           <Link href={`/artwork/${row.original.id}`} passHref>
+              <p 
+                className="font-bold text-gray-900 truncate cursor-pointer hover:underline" 
+                title={row.original.title} 
+              >
+                {row.original.title}
+              </p>
+            </Link>
             <p 
               className="text-gray-500 text-sm truncate cursor-help" 
               title={row.original.vendor}

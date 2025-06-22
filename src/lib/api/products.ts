@@ -168,7 +168,7 @@ export const uploadProductImage = async ({
   }
 };
 
-export const fetchProductById = async (id: string): Promise<Product> => {
+export const fetchProductById = async (id: string): Promise<Product | null> => {
   const { data, error } = await supabase
     .from('products')
     .select(`*, product_images(*)`)
@@ -176,13 +176,20 @@ export const fetchProductById = async (id: string): Promise<Product> => {
     .single();
 
   if (error) {
+    if (error.code === 'PGRST116') { 
+      return null;
+    }
     throw new Error(`Error fetching product: ${error.message}`);
   }
+  
+  if (!data) return null;
 
-  return {
+  const mappedData = {
     ...data,
     images: data.product_images || [],
   };
+
+  return mappedData as Product;
 };
 
 export const deleteProduct = async (id: string): Promise<void> => {

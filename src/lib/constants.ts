@@ -143,3 +143,8 @@ export const artistOptions =  [
         { value: 'Art Toy', label: 'Art Toy' },
         { value: 'Arte objeto', label: 'Arte objeto' },
     ]
+
+    export const materialKeywordTags = [
+    'Óleo', 'Acrílico', 'Técnica Mixta', 'Collage', 'Tela', 'Papel', 
+    'Madera', 'Metal', 'Bronce', 'Grabado', 'Fotografía'
+];

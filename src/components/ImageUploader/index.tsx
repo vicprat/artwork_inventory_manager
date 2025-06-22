@@ -19,11 +19,11 @@ export const ImageUploader = ({ product }: { product: Product }) => {
   };
 
   return (
-    <div className="relative w-14 h-14 group">
+    <div className="relative w-full h-full group">
       <img 
         src={product.images?.[0]?.supabase_url ?? 'https://placehold.co/60x60/f0f0f0/ccc?text=?'} 
         alt={product.title} 
-        className="w-14 h-14 object-cover rounded-md"
+        className="w-full h-full object-cover rounded-md"
       />
       <div 
         className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
