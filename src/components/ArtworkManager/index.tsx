@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-import {  SearchIcon, RefreshCwIcon } from 'lucide-react';
+import {  SearchIcon, RefreshCwIcon, DownloadIcon, TriangleAlertIcon } from 'lucide-react';
 
 import { 
   useProducts, 
@@ -21,6 +21,8 @@ import { columns } from '@/utils/columns';
 import { Option, Product } from '@/types';
 import { useOptions } from '@/hooks/useOptions';
 import Link from 'next/link';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const SortIcon = ({ column }: { column: any }) => {
     if (column.getIsSorted() === 'asc') return <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><path d="M18 15l-6-6-6 6"/></svg>;
@@ -33,6 +35,10 @@ export default function ArtworkManager() {
   const [editingData, setEditingData] = useState<Product | null>(null);
   const [sorting, setSorting] = useState<any[]>([]);
   const [globalFilter, setGlobalFilter] = useState<string>('');
+  const [isConfirmExportOpen, setIsConfirmExportOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+
 
   const paginationConfig = {
     initialPageSize: 20,
@@ -152,6 +158,30 @@ export default function ArtworkManager() {
     }
   });
 
+   const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch('/api/export/csv');
+      if (!response.ok) {
+        throw new Error('Falló la exportación');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `shopify_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error("Error al exportar:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (actualError || error) {
     return (
       <div className="bg-gray-50 min-h-screen font-sans flex items-center justify-center">
@@ -181,15 +211,25 @@ export default function ArtworkManager() {
                 </Button>
               </Link>
             </div>
-            <Button 
-              onClick={handleRefresh}
-              variant="outline"
-              disabled={isActualFetching || isFetching}
-              className="ml-4"
-            >
-              <RefreshCwIcon className={`w-4 h-4 mr-2 ${(isActualFetching || isFetching) ? 'animate-spin' : ''}`} />
-              Actualizar
-            </Button>
+       <div className="flex items-center gap-2">
+             <Button 
+                  onClick={() => setIsConfirmExportOpen(true)}
+                  variant="outline"
+                  disabled={isExporting}
+                >
+                  <DownloadIcon className="w-4 h-4 mr-2" />
+                  Exportar a CSV
+                </Button>
+              <Button 
+                onClick={handleRefresh}
+                variant="outline"
+                disabled={isActualFetching || isFetching}
+              >
+                <RefreshCwIcon className={`w-4 h-4 mr-2 ${(isActualFetching || isFetching) ? 'animate-spin' : ''}`} />
+                Actualizar
+              </Button>
+            </div>
+            
           </div>
           
           {(isActualFetching || isFetching) && (
@@ -292,6 +332,42 @@ export default function ArtworkManager() {
         </div>
         
       </div>
+        <Dialog open={isConfirmExportOpen} onOpenChange={setIsConfirmExportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exportación de Inventario</DialogTitle>
+            <DialogDescription>
+              <Alert  className="mt-4">
+                <TriangleAlertIcon className="h-4 w-4" />
+                <AlertTitle>¡Atención!</AlertTitle>
+                <AlertDescription>
+                  Esta función debe ser utilizada solo cuando el inventario haya sido revisado y actualizado correctamente. El archivo resultante se usará para la importación masiva en Shopify.
+                </AlertDescription>
+              </Alert>
+              <p className="mt-4 text-sm text-gray-600">
+                ¿Estás seguro de que quieres proceder con la exportación?
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancelar</Button>
+            </DialogClose>
+            <Button
+              onClick={() => {
+                setIsConfirmExportOpen(false); 
+                handleExport(); 
+              }}
+              disabled={isExporting}
+            >
+              {isExporting 
+                ? <><RefreshCwIcon className="w-4 h-4 mr-2 animate-spin" /> Exportando...</> 
+                : "Sí, proceder y exportar"
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

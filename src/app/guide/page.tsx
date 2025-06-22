@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import { ArrowLeftIcon, EditIcon, PlusCircleIcon, SearchIcon, SaveIcon } from 'lucide-react';
+import { ArrowLeftIcon, DownloadIcon, EditIcon, PlusCircleIcon, SaveIcon, SearchIcon, TriangleAlertIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-
-export default function Page() {
+export default function GuidePage() {
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
@@ -39,41 +38,21 @@ export default function Page() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-1">Buscar y Filtrar</h3>
+                <h3 className="font-semibold mb-1">Buscar y Ordenar</h3>
                 <p className="text-sm text-gray-600">
-                  Usa la barra de búsqueda <SearchIcon className="inline-block h-4 w-4 mx-1" /> para filtrar rápidamente la tabla. Puedes buscar por título, artista, técnica o serie.
+                  Usa la barra de búsqueda <SearchIcon className="inline-block h-4 w-4" /> para filtrar por título, artista, etc. También puedes hacer clic en los encabezados de las columnas para ordenar los resultados.
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Ordenar Columnas</h3>
+                <h3 className="font-semibold mb-1">Acceder a la Vista Detallada</h3>
                 <p className="text-sm text-gray-600">
-                  Haz clic en el encabezado de una columna (como &quot;Título / Artista&quot; o &quot;Año&quot;) para ordenar los resultados de forma ascendente o descendente.
+                  Para ver y editar todos los detalles de una obra, **haz clic en su título** en la tabla. Esto te llevará a la página de edición completa de esa pieza.
                 </p>
               </div>
-               <div>
-                <h3 className="font-semibold mb-1">Paginación</h3>
-                <p className="text-sm text-gray-600">
-                  En la parte inferior de la tabla, puedes navegar entre las páginas, cambiar cuántos elementos ves por página o ir directamente a una página específica.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Edición de Obras</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div>
                 <h3 className="font-semibold mb-1">Edición Rápida</h3>
                 <p className="text-sm text-gray-600">
-                  Haz clic en el ícono del lápiz <EditIcon className="inline-block h-4 w-4 mx-1" /> en cualquier fila para activar la edición en línea. Después de hacer cambios, guarda con el ícono <SaveIcon className="inline-block h-4 w-4 mx-1" /> o cancela con la &apos;✕&apos;.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">Edición Detallada</h3>
-                <p className="text-sm text-gray-600">
-                  Para editar todos los campos de una obra, haz clic en su <span className="font-bold">título</span>. Esto te llevará a una página dedicada con todas las opciones disponibles.
+                  Para cambios rápidos, usa el ícono del lápiz <EditIcon className="inline-block h-4 w-4" /> en cualquier fila. No olvides guardar con <SaveIcon className="inline-block h-4 w-4" />.
                 </p>
               </div>
             </CardContent>
@@ -85,10 +64,30 @@ export default function Page() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600">
-                En la página de edición detallada, si un artista, técnica o localización no existe en la lista, puedes añadirlo fácilmente.
+                En la página de edición detallada, si un artista, técnica o localización no existe, puedes añadirlo al sistema.
               </p>
               <p className="text-sm text-gray-600 mt-2">
-                Simplemente haz clic en el botón <PlusCircleIcon className="inline-block h-4 w-4 mx-1" /> al lado del menú desplegable, escribe el nuevo nombre y guárdalo. Aparecerá inmediatamente en la lista para que puedas seleccionarlo.
+                Simplemente haz clic en el botón <PlusCircleIcon className="inline-block h-4 w-4" /> al lado del menú desplegable, escribe el nuevo nombre y guárdalo. Aparecerá inmediatamente en la lista para que puedas seleccionarlo.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Exportar a CSV para Shopify</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-gray-600">
+                Este es el paso final. Una vez que todo el inventario esté completo y revisado, puedes generar el archivo para Shopify.
+              </p>
+              <p className="text-sm text-gray-600">
+                1. En la vista principal, haz clic en <Button variant="outline" size="sm" className="inline-flex h-auto py-0.5 px-1.5 align-middle pointer-events-none"><DownloadIcon className="inline-block h-3 w-3 mr-1" />Exportar a CSV</Button>.
+              </p>
+              <p className="text-sm text-gray-600">
+                2. Aparecerá una ventana de confirmación <TriangleAlertIcon className="inline-block h-4 w-4 mx-1 text-destructive" /> para asegurar que estás listo para exportar.
+              </p>
+               <p className="text-sm text-gray-600">
+                3. Al confirmar, se descargará un archivo <code className="font-mono text-xs bg-gray-200 p-1 rounded">shopify_export_... .csv</code> en tu computadora, listo para ser importado en tu tienda de Shopify.
               </p>
             </CardContent>
           </Card>
