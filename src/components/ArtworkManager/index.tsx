@@ -2,7 +2,7 @@
  
 'use client'
 import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import { useOptions } from '@/hooks/useOptions';
 import Link from 'next/link';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 const SortIcon = ({ column }: { column: any }) => {
     if (column.getIsSorted() === 'asc') return <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><path d="M18 15l-6-6-6 6"/></svg>;
@@ -38,12 +39,19 @@ export default function ArtworkManager() {
   const [isConfirmExportOpen, setIsConfirmExportOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const page = searchParams.get('page') ?? '1';
+  const pageSize = searchParams.get('pageSize') ?? '20';
 
 
-  const paginationConfig = {
-    initialPageSize: 20,
+ const paginationConfig = useMemo(() => ({
+    initialPageIndex: parseInt(page, 10) - 1,
+    initialPageSize: parseInt(pageSize, 10),
     pageSizeOptions: [10, 20, 50, 100],
-  };
+  }), [page, pageSize]);
 
   const {
     data: queryResult,
@@ -51,15 +59,23 @@ export default function ArtworkManager() {
     error,
     isFetching,
   } = useProducts({
-    pageIndex: 0, 
+    pageIndex: paginationConfig.initialPageIndex,
     pageSize: paginationConfig.initialPageSize,
     sorting,
     globalFilter,
   });
+  
 
-  const totalProducts = queryResult?.total || 0;
-
+  const totalProducts = queryResult?.total ?? 0;
   const paginationState = usePagination(totalProducts, paginationConfig);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', String(paginationState.pagination.pageIndex + 1));
+    params.set('pageSize', String(paginationState.pagination.pageSize));
+    router.replace(`${pathname}?${params.toString()}`);
+  }, [paginationState.pagination.pageIndex, paginationState.pagination.pageSize, pathname, router, searchParams]);
+ 
 
   const {
     data: actualQueryResult,

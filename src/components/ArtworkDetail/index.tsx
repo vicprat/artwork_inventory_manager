@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeftIcon, SaveIcon, RefreshCwIcon, PlusCircleIcon} from 'lucide-react';
 
@@ -19,6 +18,7 @@ import { MultiSelect } from '../ui/multi-select';
 import { Tiptap } from '@/components/TipTap'; 
 import { useOptions } from '@/hooks/useOptions';
 import { AddOptionDialog } from '../AddOptionDialog';
+import { useRouter } from 'next/navigation';
 
 
 const fetchTags = async (): Promise<string[]> => {
@@ -29,6 +29,7 @@ const fetchTags = async (): Promise<string[]> => {
 
 
 export const ArtworkDetail: React.FC<{ artwork: Product }> = ({ artwork }) => {
+  const router = useRouter();
   const [editedArtwork, setEditedArtwork] = useState<Product>(artwork);
   const updateProductMutation = useUpdateProduct();
   const { data: allTags = [], isLoading: isLoadingTags } = useQuery<string[]>({ queryKey: ['allTags'], queryFn: fetchTags });
@@ -86,11 +87,14 @@ export const ArtworkDetail: React.FC<{ artwork: Product }> = ({ artwork }) => {
       <div className="mx-auto p-4 sm:p-6 lg:p-8">
         <header className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-              <Link href="/" passHref>
-                <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0">
-                  <ArrowLeftIcon className="h-4 w-4" />
-                </Button>
-              </Link>
+  <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-9 w-9 flex-shrink-0"
+                onClick={() => router.back()}
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+              </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-800 line-clamp-1" title={artwork.title}>{artwork.title}</h1>
                 <p className="text-sm text-gray-500">Editando detalles de la obra.</p>

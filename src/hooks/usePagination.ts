@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 
 export interface PaginationState {
   pageIndex: number;
@@ -13,6 +13,7 @@ export interface PaginationConfig {
   maxPageSize?: number;
   minPageSize?: number;
 }
+
 
 export interface PaginationResult {
   pagination: PaginationState;
@@ -54,7 +55,14 @@ export const usePagination = (
     pageSize: initialPageSize,
   });
 
-  // Valores calculados
+  useEffect(() => {
+    setPaginationState(prevState => ({
+      ...prevState,
+      pageIndex: initialPageIndex,
+      pageSize: initialPageSize
+    }));
+  }, [initialPageIndex, initialPageSize]);
+  
   const currentPage = pagination.pageIndex + 1; // Convert to 1-based
   const totalPages = Math.max(1, Math.ceil(totalItems / pagination.pageSize));
   const startItem = Math.min((pagination.pageIndex) * pagination.pageSize + 1, totalItems);
@@ -172,9 +180,12 @@ export const usePagination = (
     return pagination;
   }, [pagination, totalItems, totalPages]);
 
-  if (adjustedPagination.pageIndex !== pagination.pageIndex) {
-    setPaginationState(adjustedPagination);
-  }
+  useEffect(() => {
+    if (adjustedPagination.pageIndex !== pagination.pageIndex) {
+        setPaginationState(adjustedPagination);
+    }
+  }, [adjustedPagination, pagination.pageIndex]);
+
 
   return {
     pagination: adjustedPagination,
