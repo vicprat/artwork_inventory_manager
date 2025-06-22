@@ -25,6 +25,7 @@ export const Editor: React.FC<Props> = ({ content, onChange }) => {
       }),
     ],
     content,
+    immediatelyRender: false, 
     editorProps: {
       attributes: {
         class:

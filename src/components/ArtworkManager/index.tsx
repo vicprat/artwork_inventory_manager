@@ -18,7 +18,9 @@ import {
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
 import { columns } from '@/utils/columns'; 
-import { Product } from '@/types';
+import { Option, Product } from '@/types';
+import { useOptions } from '@/hooks/useOptions';
+import Link from 'next/link';
 
 const SortIcon = ({ column }: { column: any }) => {
     if (column.getIsSorted() === 'asc') return <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><path d="M18 15l-6-6-6 6"/></svg>;
@@ -68,6 +70,13 @@ export default function ArtworkManager() {
   const updateProductMutation = useUpdateProduct();
   const { invalidateProductLists } = useInvalidateProducts();
 
+  const { data: artistOptions = [] } = useOptions('artists');
+  const { data: techniqueOptions = [] } = useOptions('techniques');
+  const { data: locationOptions = [] } = useOptions('locations');
+  const { data: typeOptions = [] } = useOptions('artwork_types');
+
+
+
   const data = actualQueryResult?.data || [];
   const actualTotalProducts = actualQueryResult?.total || 0;
 
@@ -106,14 +115,16 @@ export default function ArtworkManager() {
     { value: 'DRAFT', label: 'Borrador' }
   ], []);
 
+  const mapToSelectOptions = (options: Option[]) => options.map(o => ({ value: o.name, label: o.name }));
+
  
-  const table = useReactTable({
+ const table = useReactTable({
     data,
     columns,
-    state: { 
-      sorting, 
-      globalFilter, 
-      pagination: paginationState.pagination 
+    state: {
+      sorting,
+      globalFilter,
+      pagination: paginationState.pagination
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
@@ -134,6 +145,10 @@ export default function ArtworkManager() {
       handleSave,
       statusOptions,
       isSaving: updateProductMutation.isPending,
+      artistOptions: mapToSelectOptions(artistOptions),
+      techniqueOptions: mapToSelectOptions(techniqueOptions),
+      locationOptions: mapToSelectOptions(locationOptions),
+      typeOptions: mapToSelectOptions(typeOptions),
     }
   });
 
@@ -160,6 +175,11 @@ export default function ArtworkManager() {
             <div>
               <h1 className="text-3xl font-bold text-gray-800">Gestor de Datos de Obras de Arte</h1>
               <p className="text-gray-600 mt-1">Edita, filtra y organiza los datos para Shopify.</p>
+              <Link href="/guide" >
+                <Button  className='my-2 hover:cursor-pointer' >
+                  Ver guía de uso
+                </Button>
+              </Link>
             </div>
             <Button 
               onClick={handleRefresh}
@@ -195,7 +215,7 @@ export default function ArtworkManager() {
             </div>
           </div>
           
-          <div className="overflow-x-auto">
+         <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map(headerGroup => (

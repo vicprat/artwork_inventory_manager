@@ -3,12 +3,11 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeftIcon, SaveIcon, RefreshCwIcon} from 'lucide-react';
+import { ArrowLeftIcon, SaveIcon, RefreshCwIcon, PlusCircleIcon} from 'lucide-react';
 
-import { Product } from '@/types';
+import { Product,  Option as OptionType } from '@/types';
 import { useUpdateProduct } from '@/hooks/useProducts';
-import { parseTags, generateTags, isAutoTag } from '@/utils/data';
-import { artistOptions, locationOptions, techniqueOptions, typeOptions } from '@/lib/constants';
+import { parseTags, generateTags } from '@/utils/data';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUploader } from '@/components/ImageUploader';
 import { MultiSelect } from '../ui/multi-select';
 import { Tiptap } from '@/components/TipTap'; 
+import { useOptions } from '@/hooks/useOptions';
+import { AddOptionDialog } from '../AddOptionDialog';
 
 
 const fetchTags = async (): Promise<string[]> => {
@@ -31,41 +32,53 @@ export const ArtworkDetail: React.FC<{ artwork: Product }> = ({ artwork }) => {
   const [editedArtwork, setEditedArtwork] = useState<Product>(artwork);
   const updateProductMutation = useUpdateProduct();
   const { data: allTags = [], isLoading: isLoadingTags } = useQuery<string[]>({ queryKey: ['allTags'], queryFn: fetchTags });
-  const parsedTags = useMemo(() => parseTags(editedArtwork.tags), [editedArtwork.tags]);
+  
+  const { data: artistOptions = [] } = useOptions('artists');
+  const { data: techniqueOptions = [] } = useOptions('techniques');
+  const { data: locationOptions = [] } = useOptions('locations');
+  const { data: typeOptions = [] } = useOptions('artwork_types');
+
+  const artistNames = useMemo(() => artistOptions.map(a => a.name), [artistOptions]);
+  const typeNames = useMemo(() => typeOptions.map(t => t.name), [typeOptions]);
+
+  const parsedTags = useMemo(() => parseTags(editedArtwork.tags, artistNames, typeNames), [editedArtwork.tags, artistNames, typeNames]);
   const [manualTags, setManualTags] = useState<string[]>(parsedTags.manualTags);
+
+  const [dialogState, setDialogState] = useState<{
+    open: boolean;
+    type: 'artists' | 'techniques' | 'locations' | 'artwork_types' | null;
+  }>({ open: false, type: null });
 
   useEffect(() => {
     const newTagsString = generateTags(editedArtwork, manualTags);
     if (newTagsString !== editedArtwork.tags) {
       handleInputChange('tags', newTagsString);
     }
-   
   }, [manualTags, editedArtwork]);
-  
+
   const handleInputChange = (field: keyof Product, value: string | number | boolean | null) => {
     setEditedArtwork(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = useCallback(() => {
-    const finalProduct = { ...editedArtwork, tags: generateTags(editedArtwork, manualTags) };
-    updateProductMutation.mutate(finalProduct, {
-      onSuccess: (data) => {
-        setEditedArtwork(data);
-        const newParsed = parseTags(data.tags);
-        setManualTags(newParsed.manualTags);
-      }
-    });
-  }, [editedArtwork, manualTags, updateProductMutation]);
+    updateProductMutation.mutate(editedArtwork);
+  }, [editedArtwork, updateProductMutation]);
+
+  const handleAddNewOptionSuccess = (newOption: OptionType, field: keyof Product) => {
+     handleInputChange(field, newOption.name); 
+  };
 
   const isDirty = JSON.stringify(artwork) !== JSON.stringify(editedArtwork);
 
   const manualTagOptions = useMemo(() => {
+    const autoTagNames = new Set([
+      ...artistNames,
+      ...typeNames,
+    ]);
     return allTags
-      .filter(tag => !isAutoTag(tag)) 
+      .filter(tag => !autoTagNames.has(tag)) 
       .map(tag => ({ value: tag, label: tag }));
-  }, [allTags]);
-
-  console.log('Manual Tag Options:', manualTagOptions);
+  }, [allTags, artistNames, typeNames]);
 
 
   return (
@@ -145,61 +158,104 @@ export const ArtworkDetail: React.FC<{ artwork: Product }> = ({ artwork }) => {
             <Card>
               <CardHeader><CardTitle>Organización</CardTitle></CardHeader>
               <CardContent className="grid gap-4">
-                <div className="flex items-center w-full justify-between">
+                              <div className="flex items-center w-full justify-between flex-wrap gap-2">
                 <div>
                   <label className="text-sm font-medium">Artista</label>
-                  <Select value={editedArtwork.vendor || ''} onValueChange={(v) => handleInputChange('vendor', v)}>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar Artista" /></SelectTrigger>
-                      <SelectContent>{artistOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                 <div>
-                  <label className="text-sm font-medium">Tipo de Obra</label>
-                  <Select value={editedArtwork.type || ''} onValueChange={(v) => handleInputChange('type', v)}>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar Tipo" /></SelectTrigger>
-                      <SelectContent>{typeOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Técnica</label>
-                  <Select value={editedArtwork.artwork_medium || ''} onValueChange={(v) => handleInputChange('artwork_medium', v)}>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar Técnica" /></SelectTrigger>
-                      <SelectContent>{techniqueOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={editedArtwork.vendor || ''} onValueChange={(v) => handleInputChange('vendor', v)}>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar Artista" /></SelectTrigger>
+                        <SelectContent>
+                          {artistOptions.map(option => (
+                            <SelectItem key={option.id} value={option.name}>{option.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="icon" onClick={() => setDialogState({ open: true, type: 'artists' })}>
+                      <PlusCircleIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
+                <div>
+                  <label className="text-sm font-medium">Tipo de Obra</label>
+                  <div className="flex items-center gap-2">
+                    <Select value={editedArtwork.type || ''} onValueChange={(v) => handleInputChange('type', v)}>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar Tipo" /></SelectTrigger>
+                        <SelectContent>
+                          {typeOptions.map(option => (
+                            <SelectItem key={option.id} value={option.name}>{option.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="icon" onClick={() => setDialogState({ open: true, type: 'artwork_types' })}>
+                      <PlusCircleIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Técnica</label>
+                  <div className="flex items-center gap-2">
+                    <Select value={editedArtwork.artwork_medium || ''} onValueChange={(v) => handleInputChange('artwork_medium', v)}>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar Técnica" /></SelectTrigger>
+                        <SelectContent>
+                          {techniqueOptions.map(option => (
+                            <SelectItem key={option.id} value={option.name}>{option.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="icon" onClick={() => setDialogState({ open: true, type: 'techniques' })}>
+                      <PlusCircleIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  </div>
+                </div>
+
+                <div>
                   <label className="text-sm font-medium">Dimensiones (cm)</label>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="text-sm font-medium">Alto</label>
+                      <label className="text-xs text-gray-500">Alto</label>
                       <Input value={editedArtwork.artwork_height || ''} onChange={(e) => handleInputChange('artwork_height', e.target.value)} placeholder="Alto" type="number" />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Ancho</label>
+                      <label className="text-xs text-gray-500">Ancho</label>
                       <Input value={editedArtwork.artwork_width || ''} onChange={(e) => handleInputChange('artwork_width', e.target.value)} placeholder="Ancho" type="number" />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Profundidad</label>
+                      <label className="text-xs text-gray-500">Profundidad</label>
                       <Input value={editedArtwork.profundidad || ''} onChange={(e) => handleInputChange('profundidad', e.target.value)} placeholder="Prof." type="number" />
+                    </div>
                   </div>
-                    
                 </div>
+
                 <div>
                    <label className="text-sm font-medium">Año</label>
                    <Input value={editedArtwork.artwork_year || ''} onChange={(e) => handleInputChange('artwork_year', e.target.value)} placeholder="Año" type="number" />
                 </div>
-                 <div>
+
+                <div>
                    <label className="text-sm font-medium">Serie</label>
                    <Input value={editedArtwork.serie || ''} onChange={(e) => handleInputChange('serie', e.target.value)} placeholder="Nombre de la serie"/>
                 </div>
+
                 <div>
                    <label className="text-sm font-medium">Localización</label>
-                   <Select value={editedArtwork.artworkLocation || ''} onValueChange={(v) => handleInputChange('artworkLocation', v)}>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar Localización" /></SelectTrigger>
-                      <SelectContent>{locationOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                   </Select>
+                   <div className="flex items-center gap-2">
+                     <Select value={editedArtwork.artworkLocation || ''} onValueChange={(v) => handleInputChange('artworkLocation', v)}>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar Localización" /></SelectTrigger>
+                        <SelectContent>
+                          {locationOptions.map(option => (
+                            <SelectItem key={option.id} value={option.name}>{option.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                     </Select>
+                     <Button variant="ghost" size="icon" onClick={() => setDialogState({ open: true, type: 'locations' })}>
+                       <PlusCircleIcon className="h-4 w-4" />
+                     </Button>
+                   </div>
                 </div>
+
               </CardContent>
             </Card>
 
@@ -229,6 +285,23 @@ export const ArtworkDetail: React.FC<{ artwork: Product }> = ({ artwork }) => {
 
         </main>
       </div>
+
+       {dialogState.type && (
+          <AddOptionDialog
+            open={dialogState.open}
+            onOpenChange={(open) => setDialogState({ ...dialogState, open })}
+            optionType={dialogState.type}
+            onSuccess={(newOption) => {
+                const fieldMap = {
+                    artists: 'vendor',
+                    techniques: 'artwork_medium',
+                    locations: 'artworkLocation',
+                    artwork_types: 'type'
+                };
+                handleAddNewOptionSuccess(newOption, fieldMap[dialogState.type!] as keyof Product);
+            }}
+          />
+        )}
     </div>
   );
 };

@@ -3,8 +3,7 @@ import { ColumnDef, RowData } from '@tanstack/react-table';
 import { EditIcon, SaveIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { artistOptions, locationOptions, techniqueOptions, typeOptions } from '@/lib/constants';
-import {  Product } from '@/types';
+import { Product } from '@/types';
 import { ImageUploader } from '@/components/ImageUploader';
 import React from 'react';
 import { EditableInput } from '@/components/EditableInput';
@@ -22,6 +21,10 @@ declare module '@tanstack/react-table' {
     handleSave: () => void;
     statusOptions: { value: string; label: string }[];
     isSaving: boolean;
+    artistOptions: { value: string; label: string }[];
+    techniqueOptions: { value: string; label: string }[];
+    locationOptions: { value: string; label: string }[];
+    typeOptions: { value: string; label: string }[];
   }
 }
 
@@ -69,7 +72,7 @@ export const columns: ColumnDef<Product>[] = [
           <EditableSelect 
             value={meta.editingData?.vendor || ''} 
             onChange={(value) => meta.updateLocalData('vendor', value)} 
-            options={artistOptions} 
+            options={meta.artistOptions} 
             className="bg-yellow-50 w-full" 
           />
         </div>
@@ -90,15 +93,6 @@ export const columns: ColumnDef<Product>[] = [
             >
               {row.original.vendor}
             </p>
-            
-            {(row.original.title?.length > 25 || (row.original.vendor && row.original.vendor.length > 25)) && (
-              <div className="absolute left-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 max-w-xs shadow-lg pointer-events-none">
-                <div className="font-semibold">{row.original.title}</div>
-                {row.original.vendor && (
-                  <div className="text-gray-300">{row.original.vendor}</div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       );
@@ -117,19 +111,19 @@ export const columns: ColumnDef<Product>[] = [
           <EditableSelect 
             value={meta.editingData?.type || ''} 
             onChange={(value) => meta.updateLocalData('type', value)} 
-            options={typeOptions} 
+            options={meta.typeOptions} 
             className="bg-yellow-50 w-full" 
           />
           <EditableSelect 
             value={meta.editingData?.artwork_medium || ''} 
             onChange={(value) => meta.updateLocalData('artwork_medium', value)} 
-            options={techniqueOptions} 
+            options={meta.techniqueOptions} 
             className="bg-yellow-50 w-full" 
           />
         </div>
       ) : (
         <div className="w-44">
-          <div className="group relative">
+           <div className="group relative">
             <p className="font-semibold truncate" title={row.original.type}>
               {row.original.type}
             </p>
@@ -139,12 +133,6 @@ export const columns: ColumnDef<Product>[] = [
             >
               {row.original.artwork_medium}
             </p>
-
-            {row.original.artwork_medium && row.original.artwork_medium.length > 20 && (
-              <div className="absolute left-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 max-w-xs shadow-lg pointer-events-none">
-                {row.original.artwork_medium}
-              </div>
-            )}
           </div>
         </div>
       );
@@ -249,15 +237,9 @@ export const columns: ColumnDef<Product>[] = [
             >
               {row.original.serie || '-'}
             </span>
-            
-            {row.original.serie && row.original.serie.length > 18 && (
-              <div className="absolute left-0 top-full mt-1 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 max-w-xs shadow-lg pointer-events-none">
-                {row.original.serie}
-              </div>
-            )}
           </div>
         </div>
-      );
+      );      
     }
   },
   { 
@@ -273,7 +255,7 @@ export const columns: ColumnDef<Product>[] = [
           <EditableSelect 
             value={meta.editingData?.artworkLocation || ''} 
             onChange={(value) => meta.updateLocalData('artworkLocation', value)} 
-            options={locationOptions} 
+            options={meta.locationOptions} 
             className="w-full bg-yellow-50" 
           />
         </div>
@@ -289,7 +271,7 @@ export const columns: ColumnDef<Product>[] = [
       );
     } 
   },
-  { 
+    { 
     accessorKey: 'variantPrice', 
     header: 'Precio',
     size: 100, 
@@ -303,7 +285,7 @@ export const columns: ColumnDef<Product>[] = [
             type="number" 
             step="0.01" 
             value={meta.editingData?.variantPrice || ''} 
-            onChange={(value) => meta.updateLocalData('variantPrice', value)} 
+            onChange={(value) => meta.updateLocalData('variantPrice', parseFloat(value as string) || 0)} 
             className="w-full bg-yellow-50 text-sm" 
             placeholder="0.00"
           />

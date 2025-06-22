@@ -1,26 +1,16 @@
 import { Product } from "@/types";
 
-import { artistOptions, materialKeywordTags, typeOptions } from "@/lib/constants";
+import { materialKeywordTags } from "@/lib/constants";
 
 const normalizeString = (str: string | null | undefined): string => {
     if (!str) return '';
     return str
-        .normalize("NFD") // Separa los acentos de las letras
-        .replace(/[\u0300-\u036f]/g, "") // Elimina los acentos
-        .toLowerCase() // Convierte a minúsculas
-        .trim(); // Quita espacios al inicio y al final
+        .normalize("NFD") 
+        .replace(/[\u0300-\u036f]/g, "") 
+        .toLowerCase() 
+        .trim(); 
 };
 
-const directValueTags = [
-    ...artistOptions.map(o => o.value),
-    ...typeOptions.map(o => o.value)
-];
-
-
-const valueBasedTagSet = new Set([
-    ...directValueTags,
-    ...materialKeywordTags
-].map(normalizeString));
 
 const structuralTagPatterns = [
   /^locacion-/,    
@@ -29,16 +19,24 @@ const structuralTagPatterns = [
   /^\d{4}$/,        
 ];
 
-export const isAutoTag = (tag: string): boolean => {
+export const isAutoTag = (
+  tag: string, 
+  artists: string[] = [], 
+  types: string[] = []
+): boolean => {
   const trimmedTag = tag.trim();
   const normalizedTag = normalizeString(trimmedTag);
 
-  // 1. ¿El tag normalizado existe en nuestro set de valores automáticos?
+  const valueBasedTagSet = new Set([
+    ...artists.map(normalizeString),
+    ...types.map(normalizeString),
+    ...materialKeywordTags.map(normalizeString)
+  ]);
+
   if (valueBasedTagSet.has(normalizedTag)) {
     return true;
   }
   
-  // 2. ¿El tag original coincide con algún patrón estructural?
   if (structuralTagPatterns.some(pattern => pattern.test(trimmedTag))) {
     return true;
   }
@@ -46,17 +44,21 @@ export const isAutoTag = (tag: string): boolean => {
   return false;
 };
 
-
-export const parseTags = (tagsString: string | null | undefined): { autoTags: string[], manualTags: string[] } => {
+export const parseTags = (
+  tagsString: string | null | undefined,
+  artists: string[] = [], 
+  types: string[] = []
+): { autoTags: string[], manualTags: string[] } => {
   if (!tagsString) {
     return { autoTags: [], manualTags: [] };
   }
   const allTags = tagsString.split(',').map(t => t.trim()).filter(Boolean);
-  const autoTags = allTags.filter(isAutoTag);
-  const manualTags = allTags.filter(t => !isAutoTag(t));
+  
+  const autoTags = allTags.filter(tag => isAutoTag(tag, artists, types));
+  const manualTags = allTags.filter(tag => !isAutoTag(tag, artists, types));
+  
   return { autoTags, manualTags };
 };
-
 
 
 export const generateDescription = (product: Product): string => {
@@ -117,7 +119,7 @@ export const generateTags = (product: Product, manualTagsFromInput: string[] = [
     }
     if (product.status === "ACTIVE") autoTags.add('Disponible');
     
-    const cleanManualTags = manualTagsFromInput.filter(tag => !isAutoTag(tag));
+     const cleanManualTags = manualTagsFromInput;
 
     const combinedTags = new Set([...cleanManualTags, ...Array.from(autoTags)]);
     return Array.from(combinedTags).filter(Boolean).join(', ');
