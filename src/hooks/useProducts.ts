@@ -7,7 +7,8 @@ import {
   deleteProduct,
   duplicateProduct,
   productKeys,
-  type FetchProductsParams 
+  type FetchProductsParams, 
+  deleteMultipleProducts
 } from '@/lib/api/products';
 import { Logger } from '@/utils/logger';
 import { Product } from '@/types';
@@ -82,6 +83,23 @@ export const useDeleteProduct = () => {
     },
     onError: (error: any) => {
       Logger.error(`Error al eliminar el producto: ${error.message}`);
+    },
+  });
+};
+
+export const useDeleteMultipleProducts = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteMultipleProducts,
+    onSuccess: (data, variables) => {
+      Logger.success(`${variables.length} producto(s) eliminados correctamente.`);
+      queryClient.invalidateQueries({
+        queryKey: productKeys.lists()
+      });
+    },
+    onError: (error: any) => {
+      Logger.error(`Error al eliminar los productos: ${error.message}`);
     },
   });
 };

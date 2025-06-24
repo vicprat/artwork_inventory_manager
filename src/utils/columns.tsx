@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { ColumnDef, RowData } from '@tanstack/react-table';
-import { EditIcon, SaveIcon } from 'lucide-react';
+import { EditIcon, SaveIcon, Trash2Icon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/types';
@@ -9,6 +9,7 @@ import React from 'react';
 import { EditableInput } from '@/components/EditableInput';
 import { EditableSelect } from '@/components/EditableSelect';
 import Link from 'next/link';
+import { Checkbox } from '@/components/ui/checkbox';
 
 declare module '@tanstack/react-table' {
   interface TableMeta<TData extends RowData> {
@@ -18,6 +19,7 @@ declare module '@tanstack/react-table' {
     updateLocalData: (columnId: string, value: any) => void;
     cancelEditing: () => void;
     startEditingStable: (rowIndex: number, product: TData) => void;
+    startDeleting: (product: TData) => void; 
     handleSave: () => void;
     statusOptions: { value: string; label: string }[];
     isSaving: boolean;
@@ -29,6 +31,29 @@ declare module '@tanstack/react-table' {
 }
 
 export const columns: ColumnDef<Product>[] = [
+  {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 40,
+  },
   { 
     accessorKey: 'images', 
     header: 'Imagen',
@@ -326,7 +351,7 @@ export const columns: ColumnDef<Product>[] = [
       );
     } 
   },
-  { 
+ { 
     id: 'actions', 
     header: 'Acciones',
     size: 100, 
@@ -364,15 +389,26 @@ export const columns: ColumnDef<Product>[] = [
               </Button>
             </div>
           ) : (
-            <Button 
-              onClick={() => meta.startEditingStable(row.index, row.original)} 
-              variant="ghost"
-              size="sm" 
-              className="h-7 w-7 p-0"
-              title="Editar producto"
-            >
-              <EditIcon className="h-3 w-3" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button 
+                onClick={() => meta.startEditingStable(row.index, row.original)} 
+                variant="ghost"
+                size="sm" 
+                className="h-7 w-7 p-0"
+                title="Editar producto"
+              >
+                <EditIcon className="h-3 w-3" />
+              </Button>
+              <Button 
+                onClick={() => meta.startDeleting(row.original)}
+                variant="ghost"
+                size="sm" 
+                className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                title="Borrar producto"
+              >
+                <Trash2Icon className="h-3 w-3" />
+              </Button>
+            </div>
           )}
         </div>
       );

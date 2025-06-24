@@ -203,6 +203,16 @@ export const deleteProduct = async (id: string): Promise<void> => {
   }
 };
 
+export const deleteMultipleProducts = async (ids: string[]): Promise<void> => {
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .in('id', ids);
+
+  if (error) {
+    throw new Error(`Error deleting multiple products: ${error.message}`);
+  }
+};
 export const duplicateProduct = async (product: Product): Promise<Product> => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id, images, product_images, createdAt, updatedAt, ...productData } = product;

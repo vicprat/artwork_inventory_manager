@@ -1,19 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
  
 'use client'
-import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, RowSelectionState, useReactTable } from '@tanstack/react-table';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-import {  SearchIcon, RefreshCwIcon, DownloadIcon, TriangleAlertIcon } from 'lucide-react';
+import {  SearchIcon, RefreshCwIcon, DownloadIcon, TriangleAlertIcon, Trash2Icon } from 'lucide-react';
 
 import { 
   useProducts, 
   useUpdateProduct, 
-  useInvalidateProducts 
+  useInvalidateProducts,
+  useDeleteMultipleProducts,
+  useDeleteProduct 
 } from '@/hooks/useProducts';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
@@ -36,8 +38,13 @@ export default function ArtworkManager() {
   const [editingData, setEditingData] = useState<Product | null>(null);
   const [sorting, setSorting] = useState<any[]>([]);
   const [globalFilter, setGlobalFilter] = useState<string>('');
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({}); 
   const [isConfirmExportOpen, setIsConfirmExportOpen] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false); 
   const [isExporting, setIsExporting] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isSingleConfirmDeleteOpen, setIsSingleConfirmDeleteOpen] = useState(false);
+
 
    const router = useRouter();
   const pathname = usePathname();
@@ -90,6 +97,8 @@ export default function ArtworkManager() {
   });
 
   const updateProductMutation = useUpdateProduct();
+  const deleteMultipleProductsMutation = useDeleteMultipleProducts();
+  const deleteProductMutation = useDeleteProduct();
   const { invalidateProductLists } = useInvalidateProducts();
 
   const { data: artistOptions = [] } = useOptions('artists');
@@ -139,6 +148,35 @@ export default function ArtworkManager() {
 
   const mapToSelectOptions = (options: Option[]) => options.map(o => ({ value: o.name, label: o.name }));
 
+  const handleDeleteSelected = () => {
+    const selectedIds = table.getSelectedRowModel().rows.map(row => row.original.id);
+    if (selectedIds.length > 0) {
+      deleteMultipleProductsMutation.mutate(selectedIds, {
+        onSuccess: () => {
+          table.resetRowSelection();
+          setIsConfirmDeleteOpen(false);
+        }
+      });
+    }
+  };
+
+  const startDeleting = (product: Product) => {
+    setProductToDelete(product);
+    setIsSingleConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmSingleDelete = () => {
+    if (productToDelete) {
+      deleteProductMutation.mutate(productToDelete.id, {
+        onSuccess: () => {
+          setIsSingleConfirmDeleteOpen(false);
+          setProductToDelete(null);
+          invalidateProductLists();
+        },
+      });
+    }
+  };
+
  
  const table = useReactTable({
     data,
@@ -146,8 +184,11 @@ export default function ArtworkManager() {
     state: {
       sorting,
       globalFilter,
+      rowSelection,
       pagination: paginationState.pagination
     },
+    enableRowSelection: true, 
+    onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: paginationState.onPaginationChange,
@@ -159,6 +200,7 @@ export default function ArtworkManager() {
     manualSorting: true,
     pageCount: paginationState.totalPages,
      meta: {
+      startDeleting,
       editingRow,
       editingData,
       updateLocalData,
@@ -173,6 +215,8 @@ export default function ArtworkManager() {
       typeOptions: mapToSelectOptions(typeOptions),
     }
   });
+
+    const numSelected = Object.keys(rowSelection).length;
 
    const handleExport = async () => {
     setIsExporting(true);
@@ -256,6 +300,26 @@ export default function ArtworkManager() {
               </div>
             </div>
           )}
+
+         <div className="mt-4 flex items-center justify-end w-full">
+          {numSelected > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {numSelected} seleccionado(s)
+                </span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsConfirmDeleteOpen(true)}
+                  disabled={deleteMultipleProductsMutation.isPending}
+                  >
+                  <Trash2Icon className="mr-2 h-4 w-4" />
+                  Borrar
+                </Button>
+              </div>
+            )}
+            </div> 
+
         </header>
 
         <div className="bg-white p-6 rounded-xl shadow-md">
@@ -379,6 +443,75 @@ export default function ArtworkManager() {
               {isExporting 
                 ? <><RefreshCwIcon className="w-4 h-4 mr-2 animate-spin" /> Exportando...</> 
                 : "Sí, proceder y exportar"
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Borrado</DialogTitle>
+            <DialogDescription>
+              <Alert variant="destructive" className="mt-4">
+                <TriangleAlertIcon className="h-4 w-4" />
+                <AlertTitle>¡Acción Irreversible!</AlertTitle>
+                <AlertDescription>
+                  Estás a punto de borrar permanentemente {numSelected} obra(s) de arte. Esta acción no se puede deshacer.
+                </AlertDescription>
+              </Alert>
+              <p className="mt-4 text-sm text-gray-600">
+                ¿Estás seguro de que quieres continuar?
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={deleteMultipleProductsMutation.isPending}>Cancelar</Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteSelected}
+              disabled={deleteMultipleProductsMutation.isPending}
+            >
+              {deleteMultipleProductsMutation.isPending 
+                ? <><RefreshCwIcon className="w-4 h-4 mr-2 animate-spin" /> Borrando...</> 
+                : "Sí, borrar permanentemente"
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isSingleConfirmDeleteOpen} onOpenChange={setIsSingleConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Borrado</DialogTitle>
+            <DialogDescription>
+              <p className="mt-4 text-sm text-gray-600">
+                ¿Estás seguro de que quieres borrar permanentemente la obra{' '}
+                <strong className="text-gray-900">{productToDelete?.title}</strong>? 
+                Esta acción no se puede deshacer.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsSingleConfirmDeleteOpen(false)}
+              disabled={deleteProductMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmSingleDelete}
+              disabled={deleteProductMutation.isPending}
+            >
+              {deleteProductMutation.isPending 
+                ? <><RefreshCwIcon className="w-4 h-4 mr-2 animate-spin" /> Borrando...</> 
+                : "Sí, borrar"
               }
             </Button>
           </DialogFooter>
